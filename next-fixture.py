@@ -41,7 +41,7 @@ def home_or_away(n, p):
         return p[4]
 
 def format_output(p, name):
-    output = name + """'s next game:
+    output = """    """ + name + """'s next game:
     ----------------------
     """ + p[1] + """
     """ + p[0] + """, """ + p[2] + """
@@ -51,8 +51,7 @@ def format_output(p, name):
 
 def generate_fixture():
      
-     #a = get_team(sys.argv[1])
-     a = get_team("Bristol City")
+     a = get_team(sys.argv[1])
      if a != -1:
          p, team = get_next_fixture(a)
          print format_output(p, team)
