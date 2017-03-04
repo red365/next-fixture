@@ -1,63 +1,49 @@
 # TO DO:
-# Refactor to use json library for nicer data scraping
-# Get previous form (difficult!!!)
+# Get previous form - DIFFICULT.
 
+import json
 import urllib
 import sys
 
-def get_team(team):
-    # Pass team name in and then return the team number
-    feed = urllib.urlopen("http://www.footballwebpages.co.uk/teams.json")
-    page = feed.read()
-    marker = page.find(team)
-    if marker == -1:
-        return marker
-    snippet = page[marker-25:marker]
-    team_num_start = snippet.find(":")
-    team_num_end = snippet.find('"', team_num_start+3)
-    team_num = snippet[team_num_start+3:team_num_end]
-    return team_num
+def get_team_id(my_team):
+    teams = get_json("http://www.footballwebpages.co.uk/teams.json")
+    inner_list = teams["teams"]["team"][:]
+    for team in inner_list:
+        if team["name"] == my_team:
+            return team["id"]
+    return -1
 
-def get_next_fixture(num):
-    # Takes team number and inserts it in URL to get the latest fixtures
-    url = "http://www.footballwebpages.co.uk/matches.json?team=" + str(num) + "&fixtures=5&results=0" 
-    feed = urllib.urlopen(url)
-    page = feed.read()
-    info = ["date", "competition", "status", "homeTeamName", "awayTeamName", "homeTeamNo"]
-    i = 0
-    for element in info:
-        start_element = page.find(element)
-        start_info = page.find(":", start_element)
-        end_info = page.find('"', start_info+3)
-        info[i] = page[start_info+3:end_info]
-        i += 1
-    team_name = home_or_away(num, info)
-    return info, team_name
+def get_next_fixture(team_id):
+    return get_json("http://www.footballwebpages.co.uk/matches.json?team=%s&fixtures=5&results=0" % (str(team_id)))         
+    
 
-def home_or_away(n, p):
-    if p[5] == n:
-        return p[3]
-    else:
-        return p[4]
+def get_json(url):
+    page = urllib.urlopen(url)
+    json_data = page.read()
+    decoded_json = json_data.decode('iso-8859-1')
+    data = json.loads(decoded_json)
+    return data
 
-def format_output(p, name):
-    output = """    """ + name + """'s next game:
+def format_fixture(fixture_info):
+    next_match = fixture_info["matchesTeam"]["match"][:]
+    formatted_fixture = """    %s's next game:
     ----------------------
-    """ + p[1] + """
-    """ + p[0] + """, """ + p[2] + """
-    """ + p[3] + """ v """ + p[4]
-              
-    return output
+    %s
+    %s %s 
+    %s v %s """ % (fixture_info["matchesTeam"]["team"],
+                    next_match[0]["competition"],
+                    next_match[0]["date"],
+                    next_match[0]["status"],
+                    next_match[0]["homeTeamName"],
+                    next_match[0]["awayTeamName"])
+       
+    return formatted_fixture
 
-def generate_fixture():
-     
-     a = get_team(sys.argv[1])
-     if a != -1:
-         p, team = get_next_fixture(a)
-         print format_output(p, team)
+def generate_fixture():     
+     team_id_no = get_team_id(sys.argv[1])
+     if team_id_no != -1:
+         print format_fixture(get_next_fixture(team_id_no))
      else:
-         print "Team unknown"
+         print "Team unknown or team name is incomplete ---> Check spelling and capitalisation"
       
-
-
 generate_fixture()
