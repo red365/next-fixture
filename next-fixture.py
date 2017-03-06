@@ -1,5 +1,5 @@
 # TO DO:
-# Get previous form - DIFFICULT.
+# Calculate odds of victory based on form
 
 import json
 import urllib
@@ -7,15 +7,27 @@ import sys
 
 def get_team_id(my_team):
     teams = get_json("http://www.footballwebpages.co.uk/teams.json")
-    inner_list = teams["teams"]["team"][:]
-    for team in inner_list:
+#    inner_list = teams["teams"]["team"][:]
+    for team in teams["teams"]["team"]:
         if team["name"] == my_team:
             return team["id"]
-    return -1
 
 def get_next_fixture(team_id):
-    return get_json("http://www.footballwebpages.co.uk/matches.json?team=%s&fixtures=5&results=0" % (str(team_id)))         
-    
+    return get_json("http://www.footballwebpages.co.uk/matches.json?team=%s&fixtures=5&results=0" % team_id)         
+
+def get_form(team_id, team_name):
+    dataset = get_json("http://www.footballwebpages.co.uk/form.json?team=" + str(team_id))
+    form = ""
+    for team in dataset["formGuide"]["team"]:
+        if team["name"] == team_name:            
+            for match in team["match"]:
+                if match["result"] == "Won":
+                    form += "W"
+                elif match["result"] == "Drew":
+                    form += "D"
+                else:
+                    form += "L"
+    return form
 
 def get_json(url):
     page = urllib.urlopen(url)
@@ -25,23 +37,28 @@ def get_json(url):
     return data
 
 def format_fixture(fixture_info):
-    next_match = fixture_info["matchesTeam"]["match"][:]
+    next_match = fixture_info["matchesTeam"]["match"][0]
     formatted_fixture = """    %s's next game:
     ----------------------
     %s
     %s %s 
-    %s v %s """ % (fixture_info["matchesTeam"]["team"],
-                    next_match[0]["competition"],
-                    next_match[0]["date"],
-                    next_match[0]["status"],
-                    next_match[0]["homeTeamName"],
-                    next_match[0]["awayTeamName"])
+    %s v %s 
+    Home Form: %s   Away Form: %s """ % (fixture_info["matchesTeam"]["team"],
+                                           next_match["competition"],
+                                           next_match["date"],
+                                           next_match["status"],
+                                           next_match["homeTeamName"],
+                                           next_match["awayTeamName"],
+                                           get_form(next_match["homeTeamNo"], next_match["homeTeamName"]),
+                                           get_form(next_match["awayTeamNo"], next_match["awayTeamName"])
+                                           )
+    
        
     return formatted_fixture
 
 def generate_fixture():     
      team_id_no = get_team_id(sys.argv[1])
-     if team_id_no != -1:
+     if team_id_no:
          print format_fixture(get_next_fixture(team_id_no))
      else:
          print "Team unknown or team name is incomplete ---> Check spelling and capitalisation"
