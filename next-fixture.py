@@ -1,13 +1,9 @@
-# TO DO:
-# Calculate odds of victory based on form
-
 import json
 import urllib
 import sys
 
 def get_team_id(my_team):
     teams = get_json("http://www.footballwebpages.co.uk/teams.json")
-#    inner_list = teams["teams"]["team"][:]
     for team in teams["teams"]["team"]:
         if team["name"] == my_team:
             return team["id"]
@@ -18,22 +14,26 @@ def get_next_fixture(team_id):
 def get_form(team_id, team_name):
     dataset = get_json("http://www.footballwebpages.co.uk/form.json?team=" + str(team_id))
     form = ""
-    for team in dataset["formGuide"]["team"]:
-        if team["name"] == team_name:            
-            for match in team["match"]:
-                if match["result"] == "Won":
-                    form += "W"
-                elif match["result"] == "Drew":
-                    form += "D"
-                else:
-                    form += "L"
+    if dataset != "":
+        for team in dataset["formGuide"]["team"]:
+            if team["name"] == team_name:            
+                for match in team["match"]:
+                    if match["result"] == "Won":
+                        form += "W"
+                    elif match["result"] == "Drew":
+                        form += "D"
+                    else:
+                        form += "L"
     return form
 
 def get_json(url):
-    page = urllib.urlopen(url)
-    json_data = page.read()
-    decoded_json = json_data.decode('iso-8859-1')
-    data = json.loads(decoded_json)
+    try:
+        page = urllib.urlopen(url)
+        json_data = page.read()
+        decoded_json = json_data.decode('iso-8859-1')
+        data = json.loads(decoded_json)
+    except:
+        return ""
     return data
 
 def format_fixture(fixture_info):
